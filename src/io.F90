@@ -35,6 +35,12 @@ module w90_io
   character(len=10), public, parameter:: w90_version = '3.1.0 '
   !! Label for this version of wannier90
 
+! jjunquer
+  integer, public, save           :: write_par_wan90
+  !! Is this node in charge of writing the output in a parallel run?
+! end jjunquer
+
+
   type timing_data
     !! Data about each stopwatch - for timing routines
     integer :: ncalls

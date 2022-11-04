@@ -98,11 +98,19 @@ contains
       endif
     endif
     if (done_ws_distance) return
-    done_ws_distance = .true.
+!   jjunquer
+!    done_ws_distance = .true.
+!   end jjunquer
 
     if (ndegenx*num_wann*nrpts <= 0) then
       call io_error("unexpected dimensions in ws_translate_dist")
     end if
+
+!   jjunquer
+    if( allocated(irdist_ws)  ) deallocate(irdist_ws)
+    if( allocated(crdist_ws)  ) deallocate(crdist_ws)
+    if( allocated(wdist_ndeg) ) deallocate(wdist_ndeg)
+!   end jjunquer
 
     allocate (irdist_ws(3, ndegenx, num_wann, num_wann, nrpts), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating irdist_ws in ws_translate_dist')
