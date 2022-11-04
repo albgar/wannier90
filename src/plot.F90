@@ -159,6 +159,25 @@ contains
     write (stdout, '(1x,a)') 'Calculating interpolated band-structure'
     write (stdout, *)
     !
+!   jjunquer
+    if ( allocated(ham_pack) )  deallocate(ham_pack)
+    if ( allocated(ham_kprm) )  deallocate(ham_kprm)
+    if ( allocated(U_int) )     deallocate(U_int)
+    if ( allocated(cwork) )     deallocate(cwork)
+    if ( allocated(rwork) )     deallocate(rwork)
+    if ( allocated(iwork) )     deallocate(iwork)
+    if ( allocated(ifail) )     deallocate(ifail)
+    if ( allocated(eig_int) )   deallocate(eig_int)
+    if ( allocated(bands_proj)) deallocate(bands_proj)
+    if ( allocated(idx_special_points) ) deallocate(idx_special_points)
+    if ( allocated(xval_special_points) )deallocate(xval_special_points)
+    if ( allocated(plot_kpoint) )deallocate(plot_kpoint)
+    if ( allocated(xval) )      deallocate(xval)
+    if ( allocated(eig_int) )   deallocate(eig_int)
+    if ( allocated(glabel) )    deallocate(glabel)
+    if ( allocated(xlabel) )    deallocate(xlabel)
+    if ( allocated(ctemp) )     deallocate(ctemp)
+!   end jjunquer
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating ham_pack in plot_interpolate_bands')
     allocate (ham_kprm(num_wann, num_wann), stat=ierr)
@@ -819,6 +838,16 @@ contains
     !
     if (nfermi > 1) call io_error("Error in plot: nfermi>1. Set the fermi level " &
                                   //"using the input parameter 'fermi_level'")
+!   jjunquer
+    if ( allocated(ham_pack) )  deallocate(ham_pack)
+    if ( allocated(ham_kprm) )  deallocate(ham_kprm)
+    if ( allocated(U_int) )     deallocate(U_int)
+    if ( allocated(cwork) )     deallocate(cwork)
+    if ( allocated(rwork) )     deallocate(rwork)
+    if ( allocated(iwork) )     deallocate(iwork)
+    if ( allocated(ifail) )     deallocate(ifail)
+    if ( allocated(eig_int) )   deallocate(eig_int)
+!   end jjunquer
     !
     allocate (ham_pack((num_wann*(num_wann + 1))/2), stat=ierr)
     if (ierr /= 0) call io_error('Error in allocating ham_pack plot_fermi_surface')

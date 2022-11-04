@@ -151,7 +151,12 @@ module w90_parameters
   logical, public, save :: fermi_surface_plot
   integer, public, save :: fermi_surface_num_points
   character(len=20), public, save :: fermi_surface_plot_format
-  real(kind=dp), save :: fermi_energy
+! jjunquer
+!  real(kind=dp), save :: fermi_energy
+  real(kind=dp),     public, save :: fermi_energy
+  logical, public, save :: dis_win_siesta
+  logical, public, save :: dis_win_froz_siesta
+! end jjunquer
 
   ! module  k p a t h
   logical, public, save :: kpath
@@ -545,7 +550,12 @@ contains
     integer, allocatable, dimension(:, :) :: nnkpts_block
     integer, allocatable, dimension(:) :: nnkpts_idx
 
-    call param_in_file
+!!   jjunquer:
+!   This call is not required when we use Wannier90 subroutines called
+!   directly from SIESTA.
+!    call param_in_file
+!!   end jjunquer:
+
 
     !%%%%%%%%%%%%%%%%
     ! Site symmetry
@@ -621,10 +631,17 @@ contains
       end if
     end if
 
-    num_wann = -99
-    call param_get_keyword('num_wann', found, i_value=num_wann)
-    if (.not. found) call io_error('Error: You must specify num_wann')
-    if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero')
+!!   jjunquer
+!   WANNIER90 assumes that we are going to specify the number of
+!   Wannier functions from a file.
+!   But it is going to be transferred from SIESTA
+!   To avoid a crash, we comment the following lines
+!    num_wann = -99
+!    call param_get_keyword('num_wann', found, i_value=num_wann)
+!    if (.not. found) call io_error('Error: You must specify num_wann')
+!    if (num_wann <= 0) call io_error('Error: num_wann must be greater than zero')
+!!  end jjunquer
+
 
     num_exclude_bands = 0
     call param_get_range_vector('exclude_bands', found, num_exclude_bands, lcount=.true.)
@@ -640,22 +657,24 @@ contains
 
     ! AAM_2016-09-16: some changes to logic to patch a problem with uninitialised num_bands in library mode
 !    num_bands       =   -1
-    call param_get_keyword('num_bands', found, i_value=i_temp)
-    if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
-    if (.not. library .and. .not. effective_model) then
-      if (found) num_bands = i_temp
-      if (.not. found) num_bands = num_wann
-    end if
-    ! GP: I subtract it here, but only the first time when I pass the total number of bands
-    ! In later calls, I need to pass instead num_bands already subtracted.
-    if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
-    if (.not. effective_model) then
-      if (found .and. num_bands < num_wann) then
-        write (stdout, *) 'num_bands', num_bands
-        write (stdout, *) 'num_wann', num_wann
-        call io_error('Error: num_bands must be greater than or equal to num_wann')
-      endif
-    endif
+!!   jjunquer: num_bands is transferred from Siesta
+!    call param_get_keyword('num_bands', found, i_value=i_temp)
+!    if (found .and. library) write (stdout, '(/a)') ' Ignoring <num_bands> in input file'
+!    if (.not. library .and. .not. effective_model) then
+!      if (found) num_bands = i_temp
+!      if (.not. found) num_bands = num_wann
+!    end if
+!    ! GP: I subtract it here, but only the first time when I pass the total number of bands
+!    ! In later calls, I need to pass instead num_bands already subtracted.
+!    if (library .and. library_param_read_first_pass) num_bands = num_bands - num_exclude_bands
+!    if (.not. effective_model) then
+!      if (found .and. num_bands < num_wann) then
+!        write (stdout, *) 'num_bands', num_bands
+!        write (stdout, *) 'num_wann', num_wann
+!        call io_error('Error: num_bands must be greater than or equal to num_wann')
+!      endif
+!    endif
+!!   end jjunquer
 
     num_dump_cycles = 100          ! frequency to write backups at
     call param_get_keyword('num_dump_cycles', found, i_value=num_dump_cycles)
@@ -674,7 +693,13 @@ contains
     if (.not. library .and. .not. effective_model) then
       if (found) mp_grid = iv_temp
       if (.not. found) then
-        call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
+!!    jjunquer
+!      WANNIER90 assumes that we are going to specify the
+!      dimensions of the Monkhorst-Pack grid from a file.
+!      But it is going to be transferred from SIESTA
+!      To avoid a crash, we comment the following lines
+!        call io_error('Error: You must specify dimensions of the Monkhorst-Pack grid by setting mp_grid')
+!     end jjunquer 
       elseif (any(mp_grid < 1)) then
         call io_error('Error: mp_grid must be greater than zero')
       end if
@@ -765,9 +790,13 @@ contains
     ! Wannierise
     !%%%%%%%%%%%
 
-    num_iter = 100
-    call param_get_keyword('num_iter', found, i_value=num_iter)
-    if (num_iter < 0) call io_error('Error: num_iter must be positive')
+!!   jjunquer: the number of iterations for the minimization of Omega
+!!   is transferred from SIESTA
+!    num_iter = 100
+!    call param_get_keyword('num_iter', found, i_value=num_iter)
+!    if (num_iter < 0) call io_error('Error: num_iter must be positive')
+!!   end jjunquer
+
 
     num_cg_steps = 5
     call param_get_keyword('num_cg_steps', found, i_value=num_cg_steps)
@@ -845,27 +874,31 @@ contains
     ! Plotting
     !%%%%%%%%%
 
-    wannier_plot = .false.
-    call param_get_keyword('wannier_plot', found, l_value=wannier_plot)
-
-    wannier_plot_supercell = 2
-
-    call param_get_vector_length('wannier_plot_supercell', found, length=i)
-    if (found) then
-      if (i .eq. 1) then
-        call param_get_keyword_vector('wannier_plot_supercell', found, 1, &
-                                      i_value=wannier_plot_supercell)
-        wannier_plot_supercell(2) = wannier_plot_supercell(1)
-        wannier_plot_supercell(3) = wannier_plot_supercell(1)
-      elseif (i .eq. 3) then
-        call param_get_keyword_vector('wannier_plot_supercell', found, 3, &
-                                      i_value=wannier_plot_supercell)
-      else
-        call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers')
-      end if
-      if (any(wannier_plot_supercell <= 0)) &
-        call io_error('Error: wannier_plot_supercell elements must be greater than zero')
-    end if
+!!  jjunquer: wannier_plot and wannier_plot_supercell are passed from SIESTA
+!    wannier_plot = .false.
+!    call param_get_keyword('wannier_plot', found, l_value=wannier_plot)
+!
+!    wannier_plot_supercell = 2
+!
+!    call param_get_vector_length('wannier_plot_supercell', found, length=i)
+!    if (found) then
+!      if (i .eq. 1) then
+!        call param_get_keyword_vector('wannier_plot_supercell', found, 1, &
+!                                      i_value=wannier_plot_supercell)
+!        wannier_plot_supercell(2) = wannier_plot_supercell(1)
+!        wannier_plot_supercell(3) = wannier_plot_supercell(1)
+!      elseif (i .eq. 3) then
+!        call param_get_keyword_vector('wannier_plot_supercell', found, 3, &
+!                                      i_value=wannier_plot_supercell)
+!      else
+!        call io_error('Error: wannier_plot_supercell must be provided as either one integer or a vector of three integers')
+!      end if
+!      if (any(wannier_plot_supercell <= 0)) &
+!        call io_error('Error: wannier_plot_supercell elements must be greater than zero')
+!    end if
+     wannier_plot_supercell(2) = wannier_plot_supercell(1)
+     wannier_plot_supercell(3) = wannier_plot_supercell(1)
+!!  end jjunquer
 
     wannier_plot_format = 'xcrysden'
     call param_get_keyword('wannier_plot_format', found, c_value=wannier_plot_format)
@@ -974,8 +1007,10 @@ contains
       if (bands_num_points < 0) call io_error('Error: bands_num_points must be positive')
     endif
 
-    fermi_surface_plot = .false.
-    call param_get_keyword('fermi_surface_plot', found, l_value=fermi_surface_plot)
+!!   jjunquer: fermi_surface_plot passed from SIESTA
+!    fermi_surface_plot = .false.
+!    call param_get_keyword('fermi_surface_plot', found, l_value=fermi_surface_plot)
+!!   end jjunquer
 
     fermi_surface_num_points = 50
     call param_get_keyword('fermi_surface_num_points', found, i_value=fermi_surface_num_points)
@@ -984,13 +1019,17 @@ contains
     call param_get_keyword('fermi_surface_plot_format', &
                            found, c_value=fermi_surface_plot_format)
 
-    nfermi = 0
-    found_fermi_energy = .false.
-    call param_get_keyword('fermi_energy', found, r_value=fermi_energy)
-    if (found) then
-      found_fermi_energy = .true.
-      nfermi = 1
-    endif
+!!   jjunquer: Fermi energy is passed from SIESTA
+!    nfermi = 0
+!    found_fermi_energy = .false.
+!    call param_get_keyword('fermi_energy', found, r_value=fermi_energy)
+!    if (found) then
+!      found_fermi_energy = .true.
+!      nfermi = 1
+!    endif
+    found_fermi_energy=.true.
+    nfermi=1
+!   end jjunquer
     !
     fermi_energy_scan = .false.
     call param_get_keyword('fermi_energy_min', found, r_value=fermi_energy_min)
@@ -1409,14 +1448,21 @@ contains
     hr_plot = .false.
     call param_get_keyword('hr_plot', found, l_value=hr_plot)
     if (found) call io_error('Input parameter hr_plot is no longer used. Please use write_hr instead.')
-    write_hr = .false.
-    call param_get_keyword('write_hr', found, l_value=write_hr)
+
+!!   jjunquer: write_hr is passed from SIESTA
+!    write_hr = .false.
+!    call param_get_keyword('write_hr', found, l_value=write_hr)
+!!   end jjunquer
+
 
     write_rmn = .false.
     call param_get_keyword('write_rmn', found, l_value=write_rmn)
 
-    write_tb = .false.
-    call param_get_keyword('write_tb', found, l_value=write_tb)
+!!   jjunquer: write_tb is passed from SIESTA
+!    write_tb = .false.
+!    call param_get_keyword('write_tb', found, l_value=write_tb)
+!!   end jjunquer
+
 
     hr_cutoff = 0.0_dp
     call param_get_keyword('hr_cutoff', found, r_value=hr_cutoff)
@@ -1568,7 +1614,10 @@ contains
     if (.not. library .and. .not. effective_model) then
 
       if (.not. postproc_setup) then
-        inquire (file=trim(seedname)//'.eig', exist=eig_found)
+!!       jjunquer: the eigenvalues in SIESTA are written with an .eigW extension
+!        inquire (file=trim(seedname)//'.eig', exist=eig_found)
+        inquire (file=trim(seedname)//'.eigW', exist=eig_found)
+!!       end jjunquer
         if (.not. eig_found) then
           if (disentanglement) then
             call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
@@ -1578,11 +1627,17 @@ contains
           end if
         else
           ! Allocate only here
+!!         jjunquer
+          if ( allocated(eigval) ) deallocate(eigval)
+!!         end jjunquer
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) call io_error('Error allocating eigval in param_read')
 
           eig_unit = io_file_unit()
-          open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+!!       jjunquer: the eigenvalues in SIESTA are written with an .eigW extension
+!          open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+          open (unit=eig_unit, file=trim(seedname)//'.eigW', form='formatted', status='old', err=105)
+!!        end jjunquer
           do k = 1, num_kpts
             do n = 1, num_bands
               read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
@@ -1607,31 +1662,36 @@ contains
 
     if (library .and. allocated(eigval)) eig_found = .true.
 
-    dis_win_min = -1.0_dp; dis_win_max = 0.0_dp
-    if (eig_found) dis_win_min = minval(eigval)
-    call param_get_keyword('dis_win_min', found, r_value=dis_win_min)
+!   jjunquer: New modified lines
+    if( .not. dis_win_siesta ) then
+      dis_win_min = -1.0_dp; dis_win_max = 0.0_dp
+      if (eig_found) dis_win_min = minval(eigval)
+      call param_get_keyword('dis_win_min', found, r_value=dis_win_min)
 
-    if (eig_found) dis_win_max = maxval(eigval)
-    call param_get_keyword('dis_win_max', found, r_value=dis_win_max)
-    if (eig_found .and. (dis_win_max .lt. dis_win_min)) &
-      call io_error('Error: param_read: check disentanglement windows')
-
-    dis_froz_min = -1.0_dp; dis_froz_max = 0.0_dp
-    ! no default for dis_froz_max
-    frozen_states = .false.
-    call param_get_keyword('dis_froz_max', found, r_value=dis_froz_max)
-    if (found) then
-      frozen_states = .true.
-      dis_froz_min = dis_win_min ! default value for the bottom of frozen window
-    end if
-    call param_get_keyword('dis_froz_min', found2, r_value=dis_froz_min)
-    if (eig_found) then
-      if (dis_froz_max .lt. dis_froz_min) &
-        call io_error('Error: param_read: check disentanglement frozen windows')
-      if (found2 .and. .not. found) &
-        call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
+      if (eig_found) dis_win_max = maxval(eigval)
+      call param_get_keyword('dis_win_max', found, r_value=dis_win_max)
+      if (eig_found .and. (dis_win_max .lt. dis_win_min)) &
+        call io_error('Error: param_read: check disentanglement windows')
     endif
-
+    if( .not. dis_win_froz_siesta ) then
+      dis_froz_min = -1.0_dp; dis_froz_max = 0.0_dp
+    ! no default for dis_froz_max
+      frozen_states = .false.
+      call param_get_keyword('dis_froz_max', found, r_value=dis_froz_max)
+      if (found) then
+        frozen_states = .true.
+        dis_froz_min = dis_win_min ! default value for the bottom of frozen window
+      end if
+      call param_get_keyword('dis_froz_min', found2, r_value=dis_froz_min)
+      if (eig_found) then
+        if (dis_froz_max .lt. dis_froz_min) &
+          call io_error('Error: param_read: check disentanglement frozen windows')
+        if (found2 .and. .not. found) &
+          call io_error('Error: param_read: found dis_froz_min but not dis_froz_max')
+      endif
+    endif
+!   end jjunquer: End of modified lines
+    
     dis_num_iter = 200
     call param_get_keyword('dis_num_iter', found, i_value=dis_num_iter)
     if (dis_num_iter < 0) call io_error('Error: dis_num_iter must be positive')
@@ -1998,28 +2058,37 @@ contains
 
     call param_get_keyword_block('unit_cell_cart', found, 3, 3, r_value=real_lattice_tmp)
     if (found .and. library) write (stdout, '(a)') ' Ignoring <unit_cell_cart> in input file'
-    if (.not. library) then
-      real_lattice = transpose(real_lattice_tmp)
-      if (.not. found) call io_error('Error: Did not find the cell information in the input file')
-    end if
+!!   jjunquer
+!    WANNIER90 expects that the cell information is read from a file.
+!    But it will be transferred from SIESTA.
+!    Therefore, we comment the following lines.
+!    if (.not. library) then
+!      real_lattice = transpose(real_lattice_tmp)
+!      if (.not. found) call io_error('Error: Did not find the cell information in the input file')
+!    end if
+!!   end jjunquer
+
 
     if (.not. library) &
       call utility_recip_lattice(real_lattice, recip_lattice, cell_volume)
     call utility_metric(real_lattice, recip_lattice, real_metric, recip_metric)
 
     if (.not. effective_model) allocate (kpt_cart(3, num_kpts), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
-    if (.not. library .and. .not. effective_model) then
-      allocate (kpt_latt(3, num_kpts), stat=ierr)
-      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
-    end if
-
-    call param_get_keyword_block('kpoints', found, num_kpts, 3, r_value=kpt_cart)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
-    if (.not. library .and. .not. effective_model) then
-      kpt_latt = kpt_cart
-      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file')
-    end if
+!!   jjunquer
+!    All this information will be directly transferred to WANNIER90 from SIESTA
+!    if (ierr /= 0) call io_error('Error allocating kpt_cart in param_read')
+!    if (.not. library .and. .not. effective_model) then
+!      allocate (kpt_latt(3, num_kpts), stat=ierr)
+!      if (ierr /= 0) call io_error('Error allocating kpt_latt in param_read')
+!    end if
+!
+!    call param_get_keyword_block('kpoints', found, num_kpts, 3, r_value=kpt_cart)
+!    if (found .and. library) write (stdout, '(a)') ' Ignoring <kpoints> in input file'
+!    if (.not. library .and. .not. effective_model) then
+!      kpt_latt = kpt_cart
+!      if (.not. found) call io_error('Error: Did not find the kpoint information in the input file')
+!    end if
+!!   end jjunquer
 
     ! Calculate the kpoints in cartesian coordinates
     if (.not. effective_model) then
@@ -2137,24 +2206,26 @@ contains
                           module_kmesh_spacing=dos_kmesh_spacing)
 
     ! Atoms
-    if (.not. library) num_atoms = 0
-    call param_get_block_length('atoms_frac', found, i_temp)
-    if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
-    call param_get_block_length('atoms_cart', found2, i_temp2, lunits)
-    if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
-    if (.not. library) then
-      if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
-      if (found .and. i_temp > 0) then
-        lunits = .false.
-        num_atoms = i_temp
-      elseif (found2 .and. i_temp2 > 0) then
-        num_atoms = i_temp2
-        if (lunits) num_atoms = num_atoms - 1
-      end if
-      if (num_atoms > 0) then
-        call param_get_atoms(lunits)
-      end if
-    endif
+!!   jjunquer: the number of atoms are directly passed from SIESTA
+!    if (.not. library) num_atoms = 0
+!    call param_get_block_length('atoms_frac', found, i_temp)
+!    if (found .and. library) write (stdout, '(a)') ' Ignoring <atoms_frac> in input file'
+!    call param_get_block_length('atoms_cart', found2, i_temp2, lunits)
+!    if (found2 .and. library) write (stdout, '(a)') ' Ignoring <atoms_cart> in input file'
+!    if (.not. library) then
+!      if (found .and. found2) call io_error('Error: Cannot specify both atoms_frac and atoms_cart')
+!      if (found .and. i_temp > 0) then
+!        lunits = .false.
+!        num_atoms = i_temp
+!      elseif (found2 .and. i_temp2 > 0) then
+!        num_atoms = i_temp2
+!        if (lunits) num_atoms = num_atoms - 1
+!      end if
+!      if (num_atoms > 0) then
+!        call param_get_atoms(lunits)
+!      end if
+!    endif
+!!   end jjunquer: the number of atoms are directly passed from SIESTA
 
     ! Projections
     auto_projections = .false.
@@ -2244,17 +2315,19 @@ contains
 
 302 continue
 
-    if (any(len_trim(in_data(:)) > 0)) then
-      write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
-      write (stdout, *)
-      do loop = 1, num_lines
-        if (len_trim(in_data(loop)) > 0) then
-          write (stdout, '(1x,a)') trim(in_data(loop))
-        end if
-      end do
-      write (stdout, *)
-      call io_error('Unrecognised keyword(s) in input file, see also output file')
-    end if
+!!   jjunquer
+!    if (any(len_trim(in_data(:)) > 0)) then
+!      write (stdout, '(1x,a)') 'The following section of file '//trim(seedname)//'.win contained unrecognised keywords'
+!      write (stdout, *)
+!      do loop = 1, num_lines
+!        if (len_trim(in_data(loop)) > 0) then
+!          write (stdout, '(1x,a)') trim(in_data(loop))
+!        end if
+!      end do
+!      write (stdout, *)
+!      call io_error('Unrecognised keyword(s) in input file, see also output file')
+!    end if
+!!   end jjunquer
 
     if (transport .and. tran_read_ht) goto 303
 
@@ -2263,8 +2336,10 @@ contains
 
 303 continue
 
-    deallocate (in_data, stat=ierr)
-    if (ierr /= 0) call io_error('Error deallocating in_data in param_read')
+!!  jjunquer
+!    deallocate (in_data, stat=ierr)
+!    if (ierr /= 0) call io_error('Error deallocating in_data in param_read')
+!!  end jjunquer
 
     if (transport .and. tran_read_ht) return
 
@@ -2524,11 +2599,13 @@ contains
         atoms_label(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
     enddo
 
-    do nsp = 1, num_species
-      ic = ichar(atoms_symbol(nsp) (1:1))
-      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
-        atoms_symbol(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
-    enddo
+!!   jjunquer: atoms_symbol is directly passed from SIESTA
+!    do nsp = 1, num_species
+!      ic = ichar(atoms_symbol(nsp) (1:1))
+!      if ((ic .ge. ichar('a')) .and. (ic .le. ichar('z'))) &
+!        atoms_symbol(nsp) (1:1) = char(ic + ichar('Z') - ichar('z'))
+!    enddo
+!!   end jjunquer
 
     ! Bands labels (eg, x --> X)
     do loop = 1, bands_num_spec_points
@@ -2596,21 +2673,39 @@ contains
     write (stdout, *) ' '
     ! Atoms
     if (num_atoms > 0) then
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+!!  jjunquer
+!      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+      write (stdout, '(1x,a)') '*------------------------------------------*'
       if (lenconfac .eq. 1.0_dp) then
-        write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+!!      jjunquer
+!        write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Ang)     |'
+        write (stdout, '(1x,a)') '|   Site    Cartesian Coordinate (Ang)     |'
+!!      end jjunquer
       else
-        write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+!!      jjunquer
+!        write (stdout, '(1x,a)') '|   Site       Fractional Coordinate          Cartesian Coordinate (Bohr)    |'
+        write (stdout, '(1x,a)') '|   Site    Cartesian Coordinate (Ang)     |'
+!!      end jjunquer
       endif
-      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+!!    jjunquer
+!      write (stdout, '(1x,a)') '+----------------------------------------------------------------------------+'
+      write (stdout, '(1x,a)') '+------------------------------------------+'
+!!    end jjunquer
       do nsp = 1, num_species
         do nat = 1, atoms_species_num(nsp)
-          write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
-  &                 '|', atoms_symbol(nsp), nat, atoms_pos_frac(:, nat, nsp),&
-  &                 '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
+!!         jjunquer
+!          write (stdout, '(1x,a1,1x,a2,1x,i3,3F10.5,3x,a1,1x,3F10.5,4x,a1)') &
+!  &                 '|', atoms_symbol(nsp), nat, atoms_pos_frac(:, nat, nsp),&
+!  &                 '|', atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
+          write (stdout, '(1x,a1,1x,a2,1x,i3,1x,3F10.5,4x,a1)') &
+  &                 '|', atoms_symbol(nsp), nat, atoms_pos_cart(:, nat, nsp)*lenconfac, '|'
+!         end jjunquer
         end do
       end do
-      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+!!     jjunquer
+!      write (stdout, '(1x,a)') '*----------------------------------------------------------------------------*'
+      write (stdout, '(1x,a)') '*------------------------------------------*'
+!!     end jjunquer
     else
       write (stdout, '(25x,a)') 'No atom positions specified'
     end if
@@ -3464,26 +3559,31 @@ contains
       deallocate (bands_spec_points, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating bands_spec_points in param_dealloc')
     end if
-    if (allocated(atoms_label)) then
-      deallocate (atoms_label, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_label in param_dealloc')
-    end if
-    if (allocated(atoms_symbol)) then
-      deallocate (atoms_symbol, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in param_dealloc')
-    end if
+!!   jjunquer: atoms_label and atoms_symbol are directly passed from SIESTA
+!    if (allocated(atoms_label)) then
+!      deallocate (atoms_label, stat=ierr)
+!      if (ierr /= 0) call io_error('Error in deallocating atoms_label in param_dealloc')
+!    end if
+!    if (allocated(atoms_symbol)) then
+!      deallocate (atoms_symbol, stat=ierr)
+!      if (ierr /= 0) call io_error('Error in deallocating atoms_symbol in param_dealloc')
+!    end if
+!!   end jjunquer
     if (allocated(atoms_pos_frac)) then
       deallocate (atoms_pos_frac, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating atom_pos_frac in param_dealloc')
     end if
-    if (allocated(atoms_pos_cart)) then
-      deallocate (atoms_pos_cart, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in param_dealloc')
-    end if
-    if (allocated(atoms_species_num)) then
-      deallocate (atoms_species_num, stat=ierr)
-      if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc')
-    end if
+!!   jjunquer: atoms_pos_cart and atom_species_num are directly
+!    transferred from SIESTA
+!    if (allocated(atoms_pos_cart)) then
+!      deallocate (atoms_pos_cart, stat=ierr)
+!      if (ierr /= 0) call io_error('Error in deallocating atoms_pos_cart in param_dealloc')
+!    end if
+!    if (allocated(atoms_species_num)) then
+!      deallocate (atoms_species_num, stat=ierr)
+!      if (ierr /= 0) call io_error('Error in deallocating atoms_species_num in param_dealloc')
+!    end if
+!!   end jjunquer
     if (allocated(input_proj_site)) then
       deallocate (input_proj_site, stat=ierr)
       if (ierr /= 0) call io_error('Error in deallocating input_proj_site in param_dealloc')
@@ -3833,10 +3933,15 @@ contains
       read (chk_unit) omega_invariant     ! omega invariant
 
       ! lwindow
-      if (.not. allocated(lwindow)) then
+!     jjunquer:
+!      if (.not. allocated(lwindow)) then
+        if (allocated(lwindow)) deallocate(lwindow)
+!     end jjunquer:
         allocate (lwindow(num_bands, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating lwindow in param_read_chkpt')
-      endif
+!!     jjunquer:
+!      endif
+!!     end jjunquer:
       read (chk_unit, err=122) ((lwindow(i, nkp), i=1, num_bands), nkp=1, num_kpts)
 
       ! ndimwin
@@ -3847,26 +3952,44 @@ contains
       read (chk_unit, err=123) (ndimwin(nkp), nkp=1, num_kpts)
 
       ! U_matrix_opt
-      if (.not. allocated(u_matrix_opt)) then
+!!      jjunquer: if u_matrix_opt was already allocated, deallocate it befire
+!      reallocation
+!      if (.not. allocated(u_matrix_opt)) then
+       if ( allocated(u_matrix_opt) ) deallocate(u_matrix_opt)
+!      end jjunquer
         allocate (u_matrix_opt(num_bands, num_wann, num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating u_matrix_opt in param_read_chkpt')
-      endif
+!!    jjunquer
+!      endif
+!!    end jjunquer
       read (chk_unit, err=124) (((u_matrix_opt(i, j, nkp), i=1, num_bands), j=1, num_wann), nkp=1, num_kpts)
 
     endif
 
     ! U_matrix
-    if (.not. allocated(u_matrix)) then
+!!   jjunquer: if u_matrix was already allocated, deallocate it befire
+!   reallocation
+!    if (.not. allocated(u_matrix)) then
+!!   end jjunquer
+      if (allocated(u_matrix)) deallocate(u_matrix)
       allocate (u_matrix(num_wann, num_wann, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating u_matrix in param_read_chkpt')
-    endif
+!!  jjunquer
+!    endif
+!!  jjunquer
     read (chk_unit, err=125) (((u_matrix(i, j, k), i=1, num_wann), j=1, num_wann), k=1, num_kpts)
 
     ! M_matrix
-    if (.not. allocated(m_matrix)) then
+!!   jjunquer: if m_matrix was already allocated, deallocate it befire
+!   reallocation
+!    if (.not. allocated(m_matrix)) then
+      if (allocated(m_matrix)) deallocate(m_matrix)
+!!   end jjunquer: if m_matrix was already allocated, deallocate it befire
       allocate (m_matrix(num_wann, num_wann, nntot, num_kpts), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating m_matrix in param_read_chkpt')
-    endif
+!!  jjunquer
+!    endif
+!!  end jjunquer
     read (chk_unit, err=126) ((((m_matrix(i, j, k, l), i=1, num_wann), j=1, num_wann), k=1, nntot), l=1, num_kpts)
 
     ! wannier_centres
@@ -4615,28 +4738,34 @@ contains
       end do
     end do
 
-    allocate (atoms_species_num(num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_get_atoms')
-    allocate (atoms_label(num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in param_get_atoms')
-    allocate (atoms_symbol(num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_get_atoms')
-    atoms_species_num(:) = 0
 
-    do loop = 1, num_species
-      atoms_label(loop) = ctemp(loop)
-      do loop2 = 1, num_atoms
-        if (trim(atoms_label(loop)) == trim(atoms_label_tmp(loop2))) then
-          atoms_species_num(loop) = atoms_species_num(loop) + 1
-        end if
-      end do
-    end do
+!!   jjunquer: atoms_symbol, atoms_label, and atoms_species_num are
+!    directly passed from SIESTA
+!    allocate (atoms_species_num(num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_get_atoms')
+!    allocate (atoms_label(num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_label in param_get_atoms')
+!    allocate (atoms_symbol(num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_get_atoms')
+!    atoms_species_num(:) = 0
+!
+!    do loop = 1, num_species
+!      atoms_label(loop) = ctemp(loop)
+!      do loop2 = 1, num_atoms
+!        if (trim(atoms_label(loop)) == trim(atoms_label_tmp(loop2))) then
+!          atoms_species_num(loop) = atoms_species_num(loop) + 1
+!        end if
+!      end do
+!    end do
+!!   end jjunquer
 
     max_sites = maxval(atoms_species_num)
     allocate (atoms_pos_frac(3, max_sites, num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_get_atoms')
-    allocate (atoms_pos_cart(3, max_sites, num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_get_atoms')
+!!   jjunquer: atoms_pos_cart directly transferred from SIESTA
+!    allocate (atoms_pos_cart(3, max_sites, num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_get_atoms')
+!!   end jjunquer
 
     do loop = 1, num_species
       counter = 0
@@ -4644,18 +4773,22 @@ contains
         if (trim(atoms_label(loop)) == trim(atoms_label_tmp(loop2))) then
           counter = counter + 1
           atoms_pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
-          atoms_pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
+!!        jjunquer: atoms_pos_cart directly transferred from SIESTA
+!          atoms_pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
+!!        end jjunquer
         end if
       end do
     end do
 
-    ! Strip any numeric characters from atoms_label to get atoms_symbol
-    do loop = 1, num_species
-      atoms_symbol(loop) (1:2) = atoms_label(loop) (1:2)
-      ic = ichar(atoms_symbol(loop) (2:2))
-      if ((ic .lt. ichar('a')) .or. (ic .gt. ichar('z'))) &
-        atoms_symbol(loop) (2:2) = ' '
-    end do
+!!   jjunquer: atoms_symbol is directly passed from SIESTA
+!    ! Strip any numeric characters from atoms_label to get atoms_symbol
+!    do loop = 1, num_species
+!      atoms_symbol(loop) (1:2) = atoms_label(loop) (1:2)
+!      ic = ichar(atoms_symbol(loop) (2:2))
+!      if ((ic .lt. ichar('a')) .or. (ic .gt. ichar('z'))) &
+!        atoms_symbol(loop) (2:2) = ' '
+!    end do
+!!  end  jjunquer
 
     return
 
@@ -4704,28 +4837,33 @@ contains
       end do
     end do
 
-    allocate (atoms_species_num(num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_lib_set_atoms')
-    allocate (atoms_label(num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_label in param_lib_set_atoms')
-    allocate (atoms_symbol(num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_lib_set_atoms')
-    atoms_species_num(:) = 0
-
-    do loop = 1, num_species
-      atoms_label(loop) = ctemp(loop)
-      do loop2 = 1, num_atoms
-        if (trim(atoms_label(loop)) == trim(atoms_label_tmp(loop2))) then
-          atoms_species_num(loop) = atoms_species_num(loop) + 1
-        end if
-      end do
-    end do
+!!   jjunquer: atoms_symbol, atoms_label, and atoms_species_num are
+!    directy passed from SIESTA
+!    allocate (atoms_species_num(num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_species_num in param_lib_set_atoms')
+!    allocate (atoms_label(num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_label in param_lib_set_atoms')
+!    allocate (atoms_symbol(num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_symbol in param_lib_set_atoms')
+!    atoms_species_num(:) = 0
+!
+!    do loop = 1, num_species
+!      atoms_label(loop) = ctemp(loop)
+!      do loop2 = 1, num_atoms
+!        if (trim(atoms_label(loop)) == trim(atoms_label_tmp(loop2))) then
+!          atoms_species_num(loop) = atoms_species_num(loop) + 1
+!        end if
+!      end do
+!    end do
+!!   end jjunquer
 
     max_sites = maxval(atoms_species_num)
     allocate (atoms_pos_frac(3, max_sites, num_species), stat=ierr)
     if (ierr /= 0) call io_error('Error allocating atoms_pos_frac in param_lib_set_atoms')
-    allocate (atoms_pos_cart(3, max_sites, num_species), stat=ierr)
-    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms')
+!!   jjunquer: atoms_pos_cart is directly transferred from SIESTA
+!    allocate (atoms_pos_cart(3, max_sites, num_species), stat=ierr)
+!    if (ierr /= 0) call io_error('Error allocating atoms_pos_cart in param_lib_set_atoms')
+!!   end jjunquer
 
     do loop = 1, num_species
       counter = 0
@@ -4733,22 +4871,26 @@ contains
         if (trim(atoms_label(loop)) == trim(atoms_label_tmp(loop2))) then
           counter = counter + 1
           atoms_pos_frac(:, counter, loop) = atoms_pos_frac_tmp(:, loop2)
-          atoms_pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
+!!        jjunquer: atoms_pos_cart is directly transferred from SIESTA
+!          atoms_pos_cart(:, counter, loop) = atoms_pos_cart_tmp(:, loop2)
+!!        end jjunquer
         end if
       end do
     end do
 
-    ! Strip any numeric characters from atoms_label to get atoms_symbol
-    do loop = 1, num_species
-      atoms_symbol(loop) (1:2) = atoms_label(loop) (1:2)
-      ic = ichar(atoms_symbol(loop) (2:2))
-      if ((ic .lt. ichar('a')) .or. (ic .gt. ichar('z'))) &
-        atoms_symbol(loop) (2:2) = ' '
-      tmp_string = trim(adjustl(utility_lowercase(atoms_symbol(loop))))
-      atoms_symbol(loop) (1:2) = tmp_string(1:2)
-      tmp_string = trim(adjustl(utility_lowercase(atoms_label(loop))))
-      atoms_label(loop) (1:2) = tmp_string(1:2)
-    end do
+!!   jjunquer: atoms_symbol is directly passed from SIESTA
+!    ! Strip any numeric characters from atoms_label to get atoms_symbol
+!    do loop = 1, num_species
+!      atoms_symbol(loop) (1:2) = atoms_label(loop) (1:2)
+!      ic = ichar(atoms_symbol(loop) (2:2))
+!      if ((ic .lt. ichar('a')) .or. (ic .gt. ichar('z'))) &
+!        atoms_symbol(loop) (2:2) = ' '
+!      tmp_string = trim(adjustl(utility_lowercase(atoms_symbol(loop))))
+!      atoms_symbol(loop) (1:2) = tmp_string(1:2)
+!      tmp_string = trim(adjustl(utility_lowercase(atoms_label(loop))))
+!      atoms_label(loop) (1:2) = tmp_string(1:2)
+!    end do
+!!   end jjunquer
 
     return
 
@@ -6008,6 +6150,9 @@ contains
     call comms_bcast(num_exclude_bands, 1)
     if (num_exclude_bands > 0) then
       if (.not. on_root) then
+!       jjunquer
+        if (allocated( exclude_bands )) deallocate( exclude_bands )
+!       end jjunquer
         allocate (exclude_bands(num_exclude_bands), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating exclude_bands in param_dist')
@@ -6028,6 +6173,9 @@ contains
     call comms_bcast(dis_spheres_num, 1)
     if (dis_spheres_num > 0) then
       if (.not. on_root) then
+!       jjunquer
+        if (allocated( dis_spheres )) deallocate( dis_spheres )
+!       end jjunquer
         allocate (dis_spheres(4, dis_spheres_num), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating dis_spheres in param_dist')
@@ -6043,6 +6191,9 @@ contains
     call comms_bcast(num_wannier_plot, 1)
     if (num_wannier_plot > 0) then
       if (.not. on_root) then
+!       jjunquer
+        if (allocated( wannier_plot_list )) deallocate( wannier_plot_list )
+!       end jjunquer
         allocate (wannier_plot_list(num_wannier_plot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating wannier_plot_list in param_dist')
@@ -6063,6 +6214,9 @@ contains
 
     if (num_bands_project > 0) then
       if (.not. on_root) then
+!       jjunquer
+        if (allocated( bands_plot_project )) deallocate( bands_plot_project )
+!       end jjunquer
         allocate (bands_plot_project(num_bands_project), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating bands_plot_project in param_dist')
@@ -6239,6 +6393,10 @@ contains
     call comms_bcast(selective_loc, 1)
     if (selective_loc .and. slwf_constrain) then
       if (.not. on_root) then
+!       jjunquer
+        if (allocated( ccentres_frac )) deallocate( ccentres_frac )
+        if (allocated( ccentres_cart )) deallocate( ccentres_cart )
+!       end jjunquer
         allocate (ccentres_frac(num_wann, 3), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ccentres_frac in param_get_centre_constraints')
         allocate (ccentres_cart(num_wann, 3), stat=ierr)
@@ -6255,6 +6413,10 @@ contains
     call comms_bcast(lhasproj, 1)
     if (lhasproj) then
       if (.not. on_root) then
+!       jjunquer
+        if (allocated( input_proj_site )) deallocate( input_proj_site )
+        if (allocated( proj_site )) deallocate( proj_site )
+!       end jjunquer
         allocate (input_proj_site(3, num_proj), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating input_proj_site in param_dist')
         allocate (proj_site(3, num_wann), stat=ierr)
@@ -6268,6 +6430,13 @@ contains
     ! allocatable, and in param_read they were allocated on the root node only
     !
     if (.not. on_root) then
+!     jjunquer
+      if( allocated(fermi_energy_list) )    deallocate(fermi_energy_list)
+      if( allocated(kubo_freq_list) )       deallocate(kubo_freq_list)
+      if( allocated(dos_project) )          deallocate(dos_project)
+      if( allocated(gyrotropic_band_list) ) deallocate(gyrotropic_band_list)
+      if( allocated(gyrotropic_freq_list) ) deallocate(gyrotropic_freq_list)
+!     end jjunquer
       allocate (fermi_energy_list(nfermi), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating fermi_energy_read in postw90_param_dist')
@@ -6279,10 +6448,16 @@ contains
         call io_error('Error allocating dos_project in postw90_param_dist')
       if (.not. effective_model) then
         if (eig_found) then
+!         jjunquer
+          if( allocated(eigval) ) deallocate(eigval)
+!         end jjunquer
           allocate (eigval(num_bands, num_kpts), stat=ierr)
           if (ierr /= 0) &
             call io_error('Error allocating eigval in postw90_param_dist')
         end if
+!       jjunquer
+        if( allocated(kpt_latt) ) deallocate(kpt_latt)
+!       end jjunquer
         allocate (kpt_latt(3, num_kpts), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error allocating kpt_latt in postw90_param_dist')
@@ -6297,8 +6472,10 @@ contains
 
     if (nfermi > 0) call comms_bcast(fermi_energy_list(1), nfermi)
     if (kubo_nfreq > 0) call comms_bcast(kubo_freq_list(1), kubo_nfreq)
-    call comms_bcast(gyrotropic_freq_list(1), gyrotropic_nfreq)
-    call comms_bcast(gyrotropic_band_list(1), gyrotropic_num_bands)
+    if (gyrotropic_nfreq > 0) &
+      call comms_bcast(gyrotropic_freq_list(1), gyrotropic_nfreq)
+    if (gyrotropic_num_bands > 0) &
+      call comms_bcast(gyrotropic_band_list(1), gyrotropic_num_bands)
     if (num_dos_project > 0) call comms_bcast(dos_project(1), num_dos_project)
     if (.not. effective_model) then
       if (eig_found) then
@@ -6314,6 +6491,14 @@ contains
       call comms_bcast(wbtot, 1)
 
       if (.not. on_root) then
+!       jjunquer
+        if ( allocated(nnlist) ) deallocate(nnlist)
+        if ( allocated(neigh)  ) deallocate(neigh)
+        if ( allocated(nncell) ) deallocate(nncell)
+        if ( allocated(wb)     ) deallocate(wb)
+        if ( allocated(bka)    ) deallocate(bka)
+        if ( allocated(bk)     ) deallocate(bk)
+!       end jjunquer
         allocate (nnlist(num_kpts, nntot), stat=ierr)
         if (ierr /= 0) &
           call io_error('Error in allocating nnlist in param_dist')
@@ -6349,6 +6534,10 @@ contains
     call comms_bcast(have_disentangled, 1)
 
     if (.not. on_root) then
+!     jjunquer
+      if ( allocated(wannier_centres) ) deallocate(wannier_centres)
+      if ( allocated(wannier_spreads) ) deallocate(wannier_spreads)
+!     end jjunquer
       allocate (wannier_centres(3, num_wann), stat=ierr)
       if (ierr /= 0) call io_error('Error allocating wannier_centres in param_dist')
       wannier_centres = 0.0_dp
@@ -6356,6 +6545,10 @@ contains
       if (ierr /= 0) call io_error('Error in allocating wannier_spreads in param_dist')
       wannier_spreads = 0.0_dp
       if (disentanglement) then
+!       jjunquer
+        if ( allocated(ndimwin) ) deallocate(ndimwin)
+        if ( allocated(lwindow) ) deallocate(lwindow)
+!       end jjunquer
         allocate (ndimwin(num_kpts), stat=ierr)
         if (ierr /= 0) call io_error('Error allocating ndimwin in param_dist')
         allocate (lwindow(num_bands, num_kpts), stat=ierr)
