@@ -16,13 +16,14 @@ module w90_io
   !! Module to handle operations related to file input and output.
 
   use w90_constants, only: dp
+#ifdef MPI
+  use w90_mpi
+#endif
+
+
   implicit none
 
   private
-
-#ifdef MPI
-  include 'mpif.h'
-#endif
 
   integer, public, save           :: stdout
   !! Unit on which stdout is written
@@ -316,8 +317,8 @@ contains
     character(len=50) :: filename
     integer           :: stderr, ierr, whoami, num_nodes
 
-    call mpi_comm_rank(mpi_comm_world, whoami, ierr)
-    call mpi_comm_size(mpi_comm_world, num_nodes, ierr)
+    call mpi_comm_rank(mpi_comm_w90, whoami, ierr)
+    call mpi_comm_size(mpi_comm_w90, num_nodes, ierr)
     if (num_nodes > 1) then
       if (whoami > 99999) then
         write (filename, '(a,a,I0,a)') trim(seedname), '.node_', whoami, '.werr'
@@ -340,7 +341,7 @@ contains
       close (stdout)
     end if
 
-    call MPI_abort(MPI_comm_world, 1, ierr)
+    call MPI_abort(mpi_comm_w90, 1, ierr)
 
 #else
 

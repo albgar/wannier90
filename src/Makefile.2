@@ -85,7 +85,7 @@ clean:
 constants.o: ../constants.F90
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../constants.F90
 
-io.o: ../io.F90 constants.o
+io.o: ../io.F90 constants.o w90_mpi.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../io.F90
 
 utility.o: ../utility.F90  constants.o io.o
@@ -121,7 +121,7 @@ transport.o: ../transport.F90 constants.o io.o parameters.o hamiltonian.o
 sitesym.o : ../sitesym.F90 utility.o parameters.o constants.o 
 	$(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../sitesym.F90
 
-comms.o: ../comms.F90 constants.o io.o
+comms.o: ../comms.F90 constants.o io.o w90_mpi.o
 	 $(COMPILER) $(POSTOPTS) $(FCOPTS) -c ../comms.F90
 
 boltzwann.o: $(POSTDIR)boltzwann.F90 constants.o parameters.o io.o utility.o postw90_common.o get_oper.o wan_ham.o comms.o spin.o dos.o

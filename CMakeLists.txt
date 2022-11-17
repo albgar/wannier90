@@ -34,6 +34,7 @@ endif()
 # Collect source of the project
 add_library( "${PROJECT_NAME}-lib"
 
+ src/w90_mpi.F90
  src/constants.F90
  src/io.F90
  src/utility.F90
