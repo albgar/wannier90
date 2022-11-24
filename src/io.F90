@@ -12,6 +12,41 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
+! Small module to hold the communicator
+! for use in library mode (only...)
+! Clients should use the setter and getter routines
+!
+module w90_mpi
+
+  character(len=1) :: dummy_char
+  
+#ifdef MPI
+  include 'mpif.h'
+
+  ! By default 
+  integer, protected   :: mpi_comm_w90 = mpi_comm_world
+  !! Communicator for Wannier90 (settable)
+
+  public :: set_w90_comm, get_w90_comm
+  ! leave everything public, so that the contents of mpif.h can
+  ! be propagated
+
+CONTAINS
+
+  subroutine set_w90_comm(comm)
+    integer, intent(in) :: comm
+
+    mpi_comm_w90 = comm
+  end subroutine set_w90_comm
+
+  subroutine get_w90_comm(comm)
+    integer, intent(out) :: comm
+
+    comm = mpi_comm_w90
+  end subroutine get_w90_comm
+#endif
+end module w90_mpi
+  
 module w90_io
   !! Module to handle operations related to file input and output.
 
