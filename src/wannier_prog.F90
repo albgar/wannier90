@@ -49,7 +49,15 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-program wannier
+module wannier_m
+
+  public :: wannier_newlib
+  private
+  
+CONTAINS
+  
+subroutine wannier_newlib(seedname_in)
+  
   !! The main Wannier90 program
 
   use w90_constants
@@ -67,6 +75,8 @@ program wannier
 
   implicit none
 
+  character(len=*), intent(in) :: seedname_in
+
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
   logical :: wout_found, dryrun
@@ -80,8 +90,9 @@ program wannier
   time0 = io_time()
 
   if (on_root) then
-    prog = 'wannier90'
-    call io_commandline(prog, dryrun)
+    prog = 'wannier90-newlib'
+    !    call io_commandline(prog, dryrun)
+    seedname = seedname_in
     len_seedname = len(seedname)
   end if
   call comms_bcast(len_seedname, 1)
@@ -276,5 +287,6 @@ program wannier
 
   call comms_end
 
-end program wannier
+end subroutine wannier_newlib
 
+end module wannier_m

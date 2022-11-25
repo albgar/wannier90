@@ -1,7 +1,12 @@
 
 cmake_minimum_required(VERSION 3.14)
 
- get_filename_component(srcdir "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
+list(APPEND
+   CMAKE_MODULE_PATH
+   ${CMAKE_CURRENT_SOURCE_DIR}/config/cmake
+  )
+
+get_filename_component(srcdir "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
  get_filename_component(bindir "${CMAKE_CURRENT_BINARY_DIR}" REALPATH)
 
   if("${srcdir}" STREQUAL "${bindir}")
@@ -23,6 +28,8 @@ include(GNUInstallDirs)
 # General configuration information
 add_subdirectory("config")
 
+find_package(CustomLapack)
+
 option(WITH_MPI "Whether libwannier90 should support MPI-parallelism" FALSE)
 
 if(WITH_MPI)
@@ -34,6 +41,8 @@ endif()
 # Collect source of the project
 add_library( "${PROJECT_NAME}-lib"
 
+ src/wannier.F90
+ src/wannier_prog.F90
  src/constants.F90
  src/io.F90
  src/utility.F90
@@ -71,6 +80,8 @@ if(WITH_MPI)
   target_link_libraries("${PROJECT_NAME}-lib" PUBLIC MPI::MPI_Fortran)
 
 endif()
+
+  target_link_libraries("${PROJECT_NAME}-lib" PUBLIC LAPACK::LAPACK)
 
 target_include_directories(
   "${PROJECT_NAME}-lib"
@@ -113,6 +124,9 @@ install(
   "LICENSE"
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}"
 )
+
+add_executable(w90_driver w90_driver.F90)
+target_link_libraries(w90_driver   "${PROJECT_NAME}-lib")
 
 #add_subdirectory("docs")
 
