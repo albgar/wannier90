@@ -56,7 +56,7 @@ module wannier_m
   
 CONTAINS
   
-subroutine wannier_newlib(seedname_in)
+subroutine wannier_newlib(seedname_in,post_proc_flag_in,dryrun_in)
   
   !! The main Wannier90 program
 
@@ -75,7 +75,9 @@ subroutine wannier_newlib(seedname_in)
 
   implicit none
 
-  character(len=*), intent(in) :: seedname_in
+  character(len=*), intent(in)   :: seedname_in
+  logical, intent(in), optional  :: post_proc_flag_in
+  logical, intent(in), optional  :: dryrun_in
 
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
@@ -92,9 +94,23 @@ subroutine wannier_newlib(seedname_in)
   if (on_root) then
     prog = 'wannier90-newlib'
     !    call io_commandline(prog, dryrun)
+
     seedname = seedname_in
+
+    if (present(post_proc_flag_in)) then
+       post_proc_flag = post_proc_flag_in
+    else
+       post_proc_flag = .false.
+    endif
+    if (present(dryrun_in)) then
+       dryrun = dryrun_in
+    else
+       dryrun = .false.
+    endif
+
     len_seedname = len(seedname)
   end if
+ 
   call comms_bcast(len_seedname, 1)
   call comms_bcast(seedname, len_seedname)
   call comms_bcast(dryrun, 1)
@@ -155,7 +171,10 @@ subroutine wannier_newlib(seedname_in)
       write (stdout, *) '                       No problems found with win file'
       write (stdout, *) '                       ==============================='
     endif
-    stop
+    call kmesh_dealloc()
+    call param_dealloc()
+    close(unit=stdout)
+    return
   endif
 
   ! We now distribute the parameters to the other nodes
@@ -207,7 +226,7 @@ subroutine wannier_newlib(seedname_in)
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
     if (on_root) write (stdout, '(/a)') ' Exiting... '//trim(seedname)//'.nnkp written.'
     call comms_end
-    stop
+    return
   endif
 
   if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
