@@ -56,7 +56,8 @@ module wannier_m
   
 CONTAINS
   
-subroutine wannier_newlib(seedname_in,post_proc_flag_in,dryrun_in)
+  subroutine wannier_newlib(seedname_in,post_proc_flag_in,dryrun_in, &
+                            nntot_out, nnlist_out, nncell_out)
   
   !! The main Wannier90 program
 
@@ -78,6 +79,10 @@ subroutine wannier_newlib(seedname_in,post_proc_flag_in,dryrun_in)
   character(len=*), intent(in)   :: seedname_in
   logical, intent(in), optional  :: post_proc_flag_in
   logical, intent(in), optional  :: dryrun_in
+  
+  integer, intent(out), optional :: nntot_out
+  integer, intent(out), allocatable, optional :: nnlist_out(:,:)
+  integer, intent(out), allocatable, optional :: nncell_out(:,:,:)
 
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
@@ -221,6 +226,20 @@ subroutine wannier_newlib(seedname_in,post_proc_flag_in,dryrun_in)
 
   if (postproc_setup) then
     if (on_root) call kmesh_write()
+    !
+    !
+    if (present(nntot_out)) then
+       nntot_out = nntot
+    endif
+    if (present(nnlist_out)) then
+       if (allocated(nnlist_out)) deallocate(nnlist_out)
+       allocate(nnlist_out,source=nnlist)
+    endif
+    if (present(nncell_out)) then
+       if (allocated(nncell_out)) deallocate(nncell_out)
+       allocate(nncell_out,source=nncell)
+    endif
+    !
     call kmesh_dealloc()
     call param_dealloc()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
