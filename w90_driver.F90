@@ -5,7 +5,7 @@ program w90_driver
   integer :: nntot
   integer,  allocatable :: nncell(:,:,:), nnlist(:,:)
   
-  call wannier_newlib("minimal",post_proc_flag_in=.true., &
+  call wannier_newlib("minimal",nnkp_mode=.true., &
                        nntot_out=nntot, &
                        nnlist_out=nnlist, &
                        nncell_out=nncell)
@@ -15,12 +15,12 @@ program w90_driver
      print *, "shape nnlist: ", shape(nnlist)
      print *, "shape nncell: ", shape(nncell)
      
-     call wannier_newlib("gaas",dryrun_in=.true.)
+     call wannier_newlib("gaas",dryrun_mode=.true.)
      print *, "Done gaas dryrun"
      call wannier_newlib("gaas")
      print *, "Done gaas"
 
-     call wannier_newlib("lead",post_proc_flag_in=.true., &
+     call wannier_newlib("lead",nnkp_mode=.true., &
                        nntot_out=nntot, &
                        nnlist_out=nnlist, &
                        nncell_out=nncell)

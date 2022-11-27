@@ -505,6 +505,8 @@ module w90_parameters
   logical, public, save              :: automatic_translation
   integer, public, save              :: one_dim_dir
 
+  character(len=12), public :: eig_ext
+
   ! Private data
   integer                            :: num_lines
   character(len=maxlen), allocatable :: in_data(:)
@@ -513,6 +515,7 @@ module w90_parameters
   ! AAM_2016-09-15: hr_plot is a deprecated input parameter. Replaced by write_hr.
   logical                            :: hr_plot
 
+  
   public :: param_read
   public :: param_write
   public :: param_postw90_write
@@ -1628,13 +1631,13 @@ contains
     if (.not. library .and. .not. effective_model) then
 
       if (.not. postproc_setup) then
-        inquire (file=trim(seedname)//'.eig', exist=eig_found)
+        inquire (file=trim(seedname)//trim(eig_ext), exist=eig_found)
         if (.not. eig_found) then
           if (disentanglement) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for disentanglement')
+            call io_error('No '//trim(seedname)//trim(eig_ext)//' file found. Needed for disentanglement')
           else if ((bands_plot .or. dos_plot .or. fermi_surface_plot .or. write_hr .or. boltzwann &
                     .or. geninterp)) then
-            call io_error('No '//trim(seedname)//'.eig file found. Needed for interpolation')
+            call io_error('No '//trim(seedname)//trim(eig_ext)//' file found. Needed for interpolation')
           end if
         else
           ! Allocate only here
@@ -1642,12 +1645,12 @@ contains
           if (ierr /= 0) call io_error('Error allocating eigval in param_read')
 
           eig_unit = io_file_unit()
-          open (unit=eig_unit, file=trim(seedname)//'.eig', form='formatted', status='old', err=105)
+          open (unit=eig_unit, file=trim(seedname)//trim(eig_ext), form='formatted', status='old', err=105)
           do k = 1, num_kpts
             do n = 1, num_bands
               read (eig_unit, *, err=106, end=106) i, j, eigval(n, k)
               if ((i .ne. n) .or. (j .ne. k)) then
-                write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//'.eig'
+                write (stdout, '(a)') 'Found a mismatch in '//trim(seedname)//trim(eig_ext)
                 write (stdout, '(a,i0,a,i0)') 'Wanted band  : ', n, ' found band  : ', i
                 write (stdout, '(a,i0,a,i0)') 'Wanted kpoint: ', k, ' found kpoint: ', j
                 write (stdout, '(a)') ' '
@@ -1656,7 +1659,7 @@ contains
                 write (stdout, '(a)') 'If your pseudopotentials have shallow core states remember'
                 write (stdout, '(a)') 'to account for these electrons.'
                 write (stdout, '(a)') ' '
-                call io_error('param_read: mismatch in '//trim(seedname)//'.eig')
+                call io_error('param_read: mismatch in '//trim(seedname)//trim(eig_ext))
               end if
             enddo
           end do
@@ -2368,8 +2371,8 @@ contains
 
     return
 
-105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//'.eig')
-106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//'.eig')
+105 call io_error('Error: Problem opening eigenvalue file '//trim(seedname)//trim(eig_ext))
+106 call io_error('Error: Problem reading eigenvalue file '//trim(seedname)//trim(eig_ext))
 
   end subroutine param_read
 

@@ -56,10 +56,12 @@ module wannier_m
   
 CONTAINS
   
-  subroutine wannier_newlib(seedname_in,post_proc_flag_in,dryrun_in, &
-                            nntot_out, nnlist_out, nncell_out)
+  subroutine wannier_newlib(seedname_in, nnkp_mode, dryrun_mode,   &
+                            eigfile_ext,                           &
+                            nntot_out, nnlist_out, nncell_out,     &
+                            u_matrix_out, u_matrix_opt_out)
   
-  !! The main Wannier90 program
+  !! The main Wannier90 program, wrapped as a subroutine
 
   use w90_constants
   use w90_parameters
@@ -77,12 +79,18 @@ CONTAINS
   implicit none
 
   character(len=*), intent(in)   :: seedname_in
-  logical, intent(in), optional  :: post_proc_flag_in
-  logical, intent(in), optional  :: dryrun_in
-  
+  logical, intent(in), optional  :: nnkp_mode
+  logical, intent(in), optional  :: dryrun_mode
+  character(len=*), intent(in), optional :: eigfile_ext
+
+  ! Information on k-point neighbors that clients can request
   integer, intent(out), optional :: nntot_out
   integer, intent(out), allocatable, optional :: nnlist_out(:,:)
   integer, intent(out), allocatable, optional :: nncell_out(:,:,:)
+
+  ! Information on unitary matrices that clients can request
+  complex(dp), intent(out), allocatable, optional :: u_matrix_out(:,:,:)
+  complex(dp), intent(out), allocatable, optional :: u_matrix_opt_out(:,:,:)
 
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
@@ -102,15 +110,21 @@ CONTAINS
 
     seedname = seedname_in
 
-    if (present(post_proc_flag_in)) then
-       post_proc_flag = post_proc_flag_in
+    if (present(nnkp_mode)) then
+       post_proc_flag = nnkp_mode
     else
        post_proc_flag = .false.
     endif
-    if (present(dryrun_in)) then
-       dryrun = dryrun_in
+    if (present(dryrun_mode)) then
+       dryrun = dryrun_mode
     else
        dryrun = .false.
+    endif
+
+    if (present(eigfile_ext)) then
+       eig_ext = eigfile_ext
+    else
+       eig_ext = ".eig"
     endif
 
     len_seedname = len(seedname)
@@ -240,6 +254,12 @@ CONTAINS
        allocate(nncell_out,source=nncell)
     endif
     !
+    !  sanity check
+    !
+    if (present(u_matrix_out) .or. present(u_matrix_opt_out)) then
+       call io_error('Error: Cannot request u_matrices in nnkp mode')
+    endif
+    !
     call kmesh_dealloc()
     call param_dealloc()
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to write kmesh      ', io_time(), ' (sec)'
@@ -301,6 +321,16 @@ CONTAINS
       write (stdout, '(1x,a25,f11.3,a)') 'Time for transport       ', time1 - time2, ' (sec)'
       if (tran_read_ht) goto 4004
     end if
+  endif
+
+  ! Transfer info on unitary matrices if requested
+  if (present(u_matrix_out)) then
+     if (allocated(u_matrix_out)) deallocate(u_matrix_out)
+     allocate(u_matrix_out,source=u_matrix)
+  endif
+  if (present(u_matrix_opt_out)) then
+     if (allocated(u_matrix_opt_out)) deallocate(u_matrix_opt_out)
+     allocate(u_matrix_opt_out,source=u_matrix_opt)
   endif
 
   call tran_dealloc()
