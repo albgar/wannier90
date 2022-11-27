@@ -129,8 +129,8 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call mpi_init(ierr)
-    if (ierr .ne. 0) call io_error('MPI initialisation error')
+!    call mpi_init(ierr)
+!    if (ierr .ne. 0) call io_error('MPI initialisation error')
 #endif
 
     call comms_setup_vars
@@ -203,7 +203,7 @@ contains
 #ifdef MPI
     integer :: ierr
 
-    call mpi_finalize(ierr)
+!    call mpi_finalize(ierr)
 #endif
 
   end subroutine comms_end

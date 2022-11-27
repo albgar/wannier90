@@ -6355,6 +6355,12 @@ contains
     ! allocatable, and in param_read they were allocated on the root node only
     !
     if (.not. on_root) then
+      if( allocated(fermi_energy_list) )    deallocate(fermi_energy_list)
+      if( allocated(kubo_freq_list) )       deallocate(kubo_freq_list)
+      if( allocated(dos_project) )          deallocate(dos_project)
+      if( allocated(gyrotropic_band_list) ) deallocate(gyrotropic_band_list)
+      if( allocated(gyrotropic_freq_list) ) deallocate(gyrotropic_freq_list)
+
       allocate (fermi_energy_list(nfermi), stat=ierr)
       if (ierr /= 0) call io_error( &
         'Error allocating fermi_energy_read in postw90_param_dist')

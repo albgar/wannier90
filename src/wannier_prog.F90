@@ -75,6 +75,7 @@ CONTAINS
   use w90_transport
   use w90_comms, only: on_root, num_nodes, comms_setup, comms_end, comms_bcast, my_node_id
   use w90_sitesym !YN:
+  use w90_ws_distance, only: clean_ws_translate
 
   implicit none
 
@@ -328,15 +329,17 @@ CONTAINS
      if (allocated(u_matrix_out)) deallocate(u_matrix_out)
      allocate(u_matrix_out,source=u_matrix)
   endif
-  if (present(u_matrix_opt_out)) then
-     if (allocated(u_matrix_opt_out)) deallocate(u_matrix_opt_out)
-     allocate(u_matrix_opt_out,source=u_matrix_opt)
+  if (disentanglement) then
+     if (present(u_matrix_opt_out)) then
+        if (allocated(u_matrix_opt_out)) deallocate(u_matrix_opt_out)
+        allocate(u_matrix_opt_out,source=u_matrix_opt)
+     endif
   endif
-
   call tran_dealloc()
   call hamiltonian_dealloc()
   call overlap_dealloc()
   call kmesh_dealloc()
+  call clean_ws_translate()
   call param_dealloc()
   if (lsitesymmetry) call sitesym_dealloc() !YN:
 
