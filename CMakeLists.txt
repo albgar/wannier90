@@ -29,6 +29,7 @@ include(GNUInstallDirs)
 add_subdirectory("config")
 
 find_package(CustomLapack)
+include(check_lapack)
 
 option(WITH_MPI "Whether libwannier90 should support MPI-parallelism" FALSE)
 
@@ -97,6 +98,8 @@ target_include_directories(
 # Export targets for other projects
 add_library("${PROJECT_NAME}" INTERFACE)
 target_link_libraries("${PROJECT_NAME}" INTERFACE "${PROJECT_NAME}-lib")
+add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}-lib")
+
 install(
   TARGETS
   "${PROJECT_NAME}"
@@ -126,6 +129,12 @@ install(
 )
 
 add_executable(w90_driver w90_driver.F90)
+if(WITH_MPI)
+  target_compile_definitions(
+  w90_driver
+  PRIVATE MPI
+  )
+endif()
 target_link_libraries(w90_driver   "${PROJECT_NAME}-lib")
 
 #add_subdirectory("docs")

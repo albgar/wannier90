@@ -56,7 +56,11 @@ module wannier_m
   
 CONTAINS
   
-  subroutine wannier_newlib(seedname_in, nnkp_mode, dryrun_mode,   &
+  subroutine wannier_newlib(seedname_in,                           &
+#ifdef MPI
+                            mpi_comm,                              &
+#endif
+                            nnkp_mode, dryrun_mode,                &
                             eigfile_ext,                           &
                             nntot_out, nnlist_out, nncell_out,     &
                             u_matrix_out, u_matrix_opt_out)
@@ -66,6 +70,7 @@ CONTAINS
   use w90_constants
   use w90_parameters
   use w90_io
+  use w90_mpi, only: set_w90_comm
   use w90_hamiltonian
   use w90_kmesh
   use w90_disentangle
@@ -80,6 +85,10 @@ CONTAINS
   implicit none
 
   character(len=*), intent(in)   :: seedname_in
+#ifdef MPI
+  integer, intent(in) :: mpi_comm
+#endif
+
   logical, intent(in), optional  :: nnkp_mode
   logical, intent(in), optional  :: dryrun_mode
   character(len=*), intent(in), optional :: eigfile_ext
@@ -93,11 +102,17 @@ CONTAINS
   complex(dp), intent(out), allocatable, optional :: u_matrix_out(:,:,:)
   complex(dp), intent(out), allocatable, optional :: u_matrix_opt_out(:,:,:)
 
+  
   real(kind=dp) time0, time1, time2
   character(len=9) :: stat, pos, cdate, ctime
   logical :: wout_found, dryrun
   integer :: len_seedname
   character(len=50) :: prog
+
+#ifdef MPI
+  ! Set internal communicator to client-specified one
+  call set_w90_comm(mpi_comm)
+#endif
 
   call comms_setup
 
@@ -116,6 +131,7 @@ CONTAINS
     else
        post_proc_flag = .false.
     endif
+
     if (present(dryrun_mode)) then
        dryrun = dryrun_mode
     else
