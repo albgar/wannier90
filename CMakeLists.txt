@@ -7,23 +7,24 @@ list(APPEND
   )
 
 get_filename_component(srcdir "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
- get_filename_component(bindir "${CMAKE_CURRENT_BINARY_DIR}" REALPATH)
+get_filename_component(bindir "${CMAKE_CURRENT_BINARY_DIR}" REALPATH)
 
-  if("${srcdir}" STREQUAL "${bindir}")
-    message(FATAL_ERROR
-      "It is not allowed to configure and build this project from its source folder. Please, create a \
-separate build directory and invoke CMake from that directory.")
-  endif()
+if("${srcdir}" STREQUAL "${bindir}")
+  message(FATAL_ERROR
+      "It is not allowed to configure and build this project from its source folder")
+endif()
 
 project(
   "libwannier90"
   LANGUAGES "Fortran"
   VERSION "3.1.0"
-  DESCRIPTION "Wannier90 Library for use in Siesta"
+  DESCRIPTION "Wannier90 Library/Wrapper for use in Siesta"
 )
 
 # Follow GNU conventions for installing directories
 include(GNUInstallDirs)
+
+set(LIBRARY_OUTPUT_NAME "wannier90")
 
 # General configuration information
 add_subdirectory("config")
@@ -42,7 +43,7 @@ endif()
 # Collect source of the project
 add_library( "${PROJECT_NAME}-lib"
 
- src/wannier.F90
+ src/wannier90_m.F90
  src/wannier_prog.F90
  src/constants.F90
  src/io.F90
@@ -58,7 +59,6 @@ add_library( "${PROJECT_NAME}-lib"
  src/wannierise.F90
  src/plot.F90
  src/transport.F90
- src/wannier_lib.F90
 
 )
 
@@ -66,7 +66,7 @@ set_target_properties(
   "${PROJECT_NAME}-lib"
   PROPERTIES
   POSITION_INDEPENDENT_CODE TRUE
-  OUTPUT_NAME "wannier90"
+  OUTPUT_NAME "${LIBRARY_OUTPUT_NAME}"
   VERSION "${PROJECT_VERSION}"
   SOVERSION "${PROJECT_VERSION_MAJOR}"
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include"
@@ -92,13 +92,15 @@ target_include_directories(
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${module-dir}>
 )
 
-# Add example application
-#add_subdirectory("app")
+# Add alias libwannier90::libwannier90 to use the functionality
+# without the need to install
+#
+### add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}-lib")
+
 
 # Export targets for other projects
 add_library("${PROJECT_NAME}" INTERFACE)
 target_link_libraries("${PROJECT_NAME}" INTERFACE "${PROJECT_NAME}-lib")
-add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}-lib")
 
 install(
   TARGETS
@@ -128,6 +130,8 @@ install(
   DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}"
 )
 
+# A proof-of-concept driver with hardwired settings and paths for now
+#
 add_executable(w90_driver w90_driver.F90)
 if(WITH_MPI)
   target_compile_definitions(
@@ -137,9 +141,3 @@ if(WITH_MPI)
 endif()
 target_link_libraries(w90_driver   "${PROJECT_NAME}-lib")
 
-#add_subdirectory("docs")
-
-# add the testsuite
-
-#enable_testing()
-#add_subdirectory("Testers")

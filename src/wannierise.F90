@@ -52,10 +52,6 @@ module w90_wannierise
   !! we only need to do this on entering wann_main (_gamma)
   real(kind=dp) :: lambda_loc
 
-#ifdef MPI
-  include 'mpif.h'
-#endif
-
   type localisation_vars
     !! Contributions to the spread
     real(kind=dp) :: om_i
