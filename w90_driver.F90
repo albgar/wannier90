@@ -1,5 +1,5 @@
 program w90_driver
-  use wannier_m
+  use wannier90_m, only: wannier90_wrapper
 #ifdef MPI
   use mpi
 #endif
@@ -14,7 +14,7 @@ program w90_driver
   call MPI_init(MPI_err)
 #endif
   
-  call wannier_newlib("minimal",         &
+  call wannier90_wrapper("minimal",         &
 #ifdef MPI
                        mpi_comm=mpi_comm_world, &
 #endif
@@ -28,20 +28,20 @@ program w90_driver
      print *, "shape nnlist: ", shape(nnlist)
      print *, "shape nncell: ", shape(nncell)
      
-     call wannier_newlib("gaas",  &
+     call wannier90_wrapper("gaas",  &
 #ifdef MPI
                        mpi_comm=mpi_comm_world, &
 #endif
                        dryrun_mode=.true.)
      print *, "Done gaas dryrun"
-     call wannier_newlib("gaas", &
+     call wannier90_wrapper("gaas", &
 #ifdef MPI
                        mpi_comm=mpi_comm_world &
 #endif
                         )
      print *, "Done gaas"
 
-     call wannier_newlib("lead",  &
+     call wannier90_wrapper("lead",  &
 #ifdef MPI
                        mpi_comm=mpi_comm_world, &
 #endif
@@ -54,14 +54,14 @@ program w90_driver
      print *, "shape nnlist: ", shape(nnlist)
      print *, "shape nncell: ", shape(nncell)
 
-     call wannier_newlib("gaas", &
+     call wannier90_wrapper("gaas", &
 #ifdef MPI
                        mpi_comm=mpi_comm_world &
 #endif
                         )
      print *, "Done gaas again"
 
-     call wannier_newlib("../example04/copper", &
+     call wannier90_wrapper("../example04/copper", &
 #ifdef MPI
                        mpi_comm=mpi_comm_world &
 #endif

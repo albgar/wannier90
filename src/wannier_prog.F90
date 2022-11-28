@@ -49,14 +49,14 @@
 ! https://github.com/wannier-developers/wannier90            !
 !------------------------------------------------------------!
 
-module wannier_m
+module wannier90_wrapper_m
 
-  public :: wannier_newlib
+  public :: wannier90_wrapper
   private
   
 CONTAINS
   
-  subroutine wannier_newlib(seedname_in,                           &
+  subroutine wannier90_wrapper(seedname_in,                           &
 #ifdef MPI
                             mpi_comm,                              &
 #endif
@@ -374,6 +374,6 @@ CONTAINS
 
   call comms_end
 
-end subroutine wannier_newlib
+end subroutine wannier90_wrapper
 
-end module wannier_m
+end module wannier90_wrapper_m
