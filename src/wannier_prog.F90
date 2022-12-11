@@ -70,7 +70,9 @@ CONTAINS
   use w90_constants
   use w90_parameters
   use w90_io
+#ifdef MPI
   use w90_mpi, only: set_w90_comm
+#endif
   use w90_hamiltonian
   use w90_kmesh
   use w90_disentangle

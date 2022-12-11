@@ -14,32 +14,28 @@ program w90_driver
   call MPI_init(MPI_err)
 #endif
   
-  call wannier90_wrapper("minimal",         &
-#ifdef MPI
-                       mpi_comm=mpi_comm_world, &
-#endif
-                       nnkp_mode=.true., &
-                       nntot_out=nntot, &
-                       nnlist_out=nnlist, &
-                       nncell_out=nncell)
-                       
-     print *, "Done minimal preprocessing"
-     print *, "nntot: ", nntot
-     print *, "shape nnlist: ", shape(nnlist)
-     print *, "shape nncell: ", shape(nncell)
-     
      call wannier90_wrapper("gaas",  &
 #ifdef MPI
                        mpi_comm=mpi_comm_world, &
 #endif
                        dryrun_mode=.true.)
      print *, "Done gaas dryrun"
-     call wannier90_wrapper("gaas", &
+     
 #ifdef MPI
-                       mpi_comm=mpi_comm_world &
+     call wannier90_wrapper("gaas", mpi_comm=mpi_comm_world)
+#else
+     call wannier90_wrapper("gaas")
 #endif
-                        )
+                        
      print *, "Done gaas"
+
+#ifdef MPI
+     call wannier90_wrapper("silicon", mpi_comm=mpi_comm_world)
+#else
+     call wannier90_wrapper("silicon")
+#endif
+                        
+     print *, "Done silicon"
 
      call wannier90_wrapper("lead",  &
 #ifdef MPI
@@ -54,18 +50,19 @@ program w90_driver
      print *, "shape nnlist: ", shape(nnlist)
      print *, "shape nncell: ", shape(nncell)
 
-     call wannier90_wrapper("gaas", &
 #ifdef MPI
-                       mpi_comm=mpi_comm_world &
+     call wannier90_wrapper("gaas", mpi_comm=mpi_comm_world)
+#else
+     call wannier90_wrapper("gaas")
 #endif
-                        )
+
      print *, "Done gaas again"
 
-     call wannier90_wrapper("../example04/copper", &
 #ifdef MPI
-                       mpi_comm=mpi_comm_world &
+     call wannier90_wrapper("copper", mpi_comm=mpi_comm_world)
+#else
+     call wannier90_wrapper("copper")
 #endif
-                        )
      print *, "Done copper"
      
 #ifdef MPI

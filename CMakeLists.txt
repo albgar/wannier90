@@ -141,3 +141,5 @@ if(WITH_MPI)
 endif()
 target_link_libraries(w90_driver   "${PROJECT_NAME}-lib")
 
+enable_testing()
+add_subdirectory("examples")
