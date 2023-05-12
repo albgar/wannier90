@@ -183,6 +183,11 @@ contains
       end if
 
       if (on_root) then
+         print *, "num_shells: ", num_shells
+         print *, "shell_list(.size.): ", size(shell_list)
+         print *, "shell_list(...): ", shell_list(1:)
+         print *, "----"
+         
         write (stdout, '(1x,a)', advance='no') '| The following shells are used: '
         do ndnn = 1, num_shells
           if (ndnn .eq. num_shells) then

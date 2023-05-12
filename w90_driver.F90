@@ -22,20 +22,20 @@ program w90_driver
      print *, "Done gaas dryrun"
      
 #ifdef MPI
-     call wannier90_wrapper("gaas", mpi_comm=mpi_comm_world)
+!     call wannier90_wrapper("gaas", mpi_comm=mpi_comm_world)
 #else
-     call wannier90_wrapper("gaas")
+!     call wannier90_wrapper("gaas")
 #endif
                         
-     print *, "Done gaas"
+!     print *, "Done gaas"
 
 #ifdef MPI
-     call wannier90_wrapper("silicon", mpi_comm=mpi_comm_world)
+!     call wannier90_wrapper("silicon", mpi_comm=mpi_comm_world)
 #else
-     call wannier90_wrapper("silicon")
+!     call wannier90_wrapper("silicon")
 #endif
                         
-     print *, "Done silicon"
+!     print *, "Done silicon"
 
      call wannier90_wrapper("lead",  &
 #ifdef MPI

@@ -29,6 +29,8 @@ set(LIBRARY_OUTPUT_NAME "wannier90")
 # General configuration information
 add_subdirectory("config")
 
+include(flags)
+
 find_package(CustomLapack)
 include(check_lapack)
 

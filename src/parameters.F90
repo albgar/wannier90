@@ -6287,6 +6287,7 @@ contains
     call comms_bcast(tran_group_threshold, 1)
     call comms_bcast(translation_centre_frac(1), 3)
     call comms_bcast(num_shells, 1)
+    call comms_bcast(search_shells, 1)
     call comms_bcast(skip_B1_tests, 1)
     call comms_bcast(explicit_nnkpts, 1)
 
