@@ -1243,9 +1243,20 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_scatterv(rootglobalarray, counts, displs, MPI_double_complex, &
-                      array, localcount, MPI_double_complex, root_id, mpi_comm_w90, error)
+    print *, "num_nodes: ", num_nodes
+    print *, "counts: ", counts
+    print *, "localcount: ", localcount
+    print *, "displs: ", displs
+    print *, "shape(rootglobalarray): ", shape(rootglobalarray)
+    print *, "shape(array): ", shape(array)
+    print *, "size(rootglobalarray): ", size(rootglobalarray)
+    print *, "size(array): ", size(array)
+    
+    print *, "... about to make MPI call"
+    call MPI_scatterv(rootglobalarray(1,1,1,1), counts, displs, MPI_double_complex, &
+                      array(1,1,1,1), localcount, MPI_double_complex, root_id, mpi_comm_w90, error)
 
+    print *, "... after MPI call"
     if (error .ne. MPI_success) then
       call io_error('Error in comms_scatterv_cmplx_4')
     end if

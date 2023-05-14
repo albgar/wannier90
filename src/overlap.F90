@@ -100,6 +100,7 @@ contains
     use w90_io, only: io_file_unit, io_error, seedname, io_stopwatch
     use w90_comms, only: my_node_id, num_nodes, &
       comms_array_split, comms_scatterv
+    use w90_comms, only: comms_barrier
 
     implicit none
 
@@ -117,8 +118,11 @@ contains
 
     if (timing_level > 0) call io_stopwatch('overlap: read', 1)
 
+    call comms_barrier()
+    print *, "before comms_array_split"
     call comms_array_split(num_kpts, counts, displs)
 
+    print *, "after comms_array_split"
     if (disentanglement) then
       if (on_root) then
         m_matrix_orig = cmplx_0
@@ -128,6 +132,7 @@ contains
       u_matrix_opt = cmplx_0
     endif
 
+    call comms_barrier()
     if (on_root) then
 
       ! Read M_matrix_orig from file
@@ -197,6 +202,12 @@ contains
       close (mmn_in)
     endif
 
+    call comms_barrier()
+    
+    print *, "after reading mmn"
+    print *, "before printing info about m_matrix and m_matrix_local"
+    print *, "shape m_matrix: ", shape(m_matrix)
+    print *, "shape m_matrix_local: ", shape(m_matrix_local)
     if (disentanglement) then
 !       call comms_bcast(m_matrix_orig(1,1,1,1),num_bands*num_bands*nntot*num_kpts)
       call comms_scatterv(m_matrix_orig_local, num_bands*num_bands*nntot*counts(my_node_id), &
@@ -207,6 +218,8 @@ contains
                           m_matrix, num_wann*num_wann*nntot*counts, num_wann*num_wann*nntot*displs)
     endif
 
+    print *, "after comms_scatterv"
+    
     if (.not. use_bloch_phases) then
       if (on_root) then
 
@@ -252,26 +265,32 @@ contains
         close (amn_in)
       endif
 
+      print *, "after reading Amn"
       if (disentanglement) then
         call comms_bcast(a_matrix(1, 1, 1), num_bands*num_wann*num_kpts)
       else
         call comms_bcast(u_matrix(1, 1, 1), num_wann*num_wann*num_kpts)
       endif
+      print *, "after comms_bcast of a or u matrix"
 
     else
 
+      print *, "before assignment of cmplx_1 to u_matrix"
       do n = 1, num_kpts
         do m = 1, num_wann
           u_matrix(m, m, n) = cmplx_1
         end do
       end do
 
+      print *, "after assignment of cmplx_1 to u_matrix"
     end if
+    print *, " before overlap_rotate"
 
     ! If post-processing a Car-Parinello calculation (gamma only)
     ! then rotate M and A to the basis of Kohn-Sham eigenstates
     if (cp_pp) call overlap_rotate()
 
+    print *, " after overlap_rotate"
     ! Check Mmn(k,b) is symmetric in m and n for gamma_only case
 !~      if (gamma_only) call overlap_check_m_symmetry()
 
@@ -293,6 +312,7 @@ contains
 !~       endif
 !
 !~[aam]
+    print *, " before overlap_project.."
     if ((.not. disentanglement) .and. (.not. cp_pp) .and. (.not. use_bloch_phases)) then
       if (.not. gamma_only) then
         call overlap_project()
@@ -300,6 +320,8 @@ contains
         call overlap_project_gamma()
       endif
     endif
+    print *, " after overlap_project.."
+
 !~[aam]
 
     !~      if( gamma_only .and. use_bloch_phases ) then
@@ -311,6 +333,7 @@ contains
 ![ysl-e]
 
     if (timing_level > 0) call io_stopwatch('overlap: read', 2)
+    print *, " about to return from overlap_read"
 
     return
 101 call io_error('Error: Problem opening input file '//trim(seedname)//'.mmn')

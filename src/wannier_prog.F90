@@ -215,8 +215,10 @@ CONTAINS
     return
   endif
 
+  print *, " before param_dist"
   ! We now distribute the parameters to the other nodes
   call param_dist
+  print *, " after param_dist"
   if (gamma_only .and. num_nodes > 1) &
     call io_error('Gamma point branch is serial only at the moment')
 
@@ -257,6 +259,7 @@ CONTAINS
     end select
   endif
 
+  print *, " before if postproc_setup"
   if (postproc_setup) then
     if (on_root) call kmesh_write()
     !
@@ -287,10 +290,15 @@ CONTAINS
     return
   endif
 
+  print *, " after if postproc_setup"
   if (lsitesymmetry) call sitesym_read()   ! update this to read on root and bcast - JRY
+  print *, " after if lsitesymmetry sitesym_read"
   call overlap_allocate()
+  print *, " after overlap_allocate"
   call overlap_read()
 
+  print *, " after overlap_allocate and read"
+  
   time1 = io_time()
   if (on_root) write (stdout, '(/1x,a25,f11.3,a)') 'Time to read overlaps    ', time1 - time2, ' (sec)'
 
@@ -303,21 +311,25 @@ CONTAINS
     if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time to disentangle bands', time2 - time1, ' (sec)'
   endif
 
+  print *, " before param_write_chkpt"
   if (on_root) call param_write_chkpt('postdis')
 !~  call param_write_um
 
 1001 time2 = io_time()
 
+  print *, " before main calls"
   if (.not. gamma_only) then
     call wann_main()
   else
     call wann_main_gamma()
   end if
 
+  print *, " after main calls"
   time1 = io_time()
   if (on_root) write (stdout, '(1x,a25,f11.3,a)') 'Time for wannierise      ', time1 - time2, ' (sec)'
 
   if (on_root) call param_write_chkpt('postwann')
+  print *, " after param_write_chkpt__postwann"
 
 2002 continue
   if (on_root) then
@@ -330,6 +342,7 @@ CONTAINS
     ! it shouldn't be a problem.
     write (stdout, '(1x,a25,f11.3,a)') 'Time for plotting        ', time1 - time2, ' (sec)'
   endif
+  print *, " after plot_main"
 
 3003 continue
   if (on_root) then
@@ -342,6 +355,7 @@ CONTAINS
     end if
   endif
 
+  print *, " after tran_main"
   ! Transfer info on unitary matrices if requested
   if (present(u_matrix_out)) then
      if (allocated(u_matrix_out)) deallocate(u_matrix_out)
@@ -353,6 +367,7 @@ CONTAINS
         allocate(u_matrix_opt_out,source=u_matrix_opt)
      endif
   endif
+  print *, " after transfer to unitary matrices"
   call tran_dealloc()
   call hamiltonian_dealloc()
   call overlap_dealloc()
@@ -360,6 +375,7 @@ CONTAINS
   call clean_ws_translate()
   call param_dealloc()
   if (lsitesymmetry) call sitesym_dealloc() !YN:
+  print *, " after various _dealloc calls"
 
 4004 continue
 
@@ -375,6 +391,7 @@ CONTAINS
   endif
 
   call comms_end
+  print *, " after comms_end"
 
 end subroutine wannier90_wrapper
 
