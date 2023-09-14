@@ -78,6 +78,18 @@ if(WITH_MPI)
   PRIVATE MPI
   )
 
+  if(WITH_NOT_OPT_COMMS)
+   # This file might give problems in some systems (so far, MacOS M1 with gfortran...)
+   # so lower the optimization level
+   set(DEBUG_OPTIONS_LIST "${Fortran_FLAGS_DEBUG}")  # Should set this
+   separate_arguments(DEBUG_OPTIONS_LIST)   # Turns empty space to ';'
+   message(STATUS "Debug flags for some files in Src: ${DEBUG_OPTIONS_LIST}")
+   set_source_files_properties(
+      src/comms.F90
+      PROPERTIES
+      COMPILE_OPTIONS "${DEBUG_OPTIONS_LIST}" )
+  endif()
+ 
   target_link_libraries("${PROJECT_NAME}-lib" PUBLIC MPI::MPI_Fortran)
 
 endif()
