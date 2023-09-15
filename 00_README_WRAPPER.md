@@ -21,8 +21,9 @@ The ``wannier90_wrapper`` subroutine accepts as arguments:
 * (Optional) Arrays to hold the information about k-point neighbors
 * (Optional) Arrays to hold the information about the unitary matrices
 
-The last two are convenience arguments to enable client codes to extract the needed information
-directly, without having to read the .nnkp and .chk files, respectively.
+The last two are convenience arguments to enable client codes to
+extract the needed information directly, without having to read the
+.nnkp and .chk files, respectively.
 
 All other interaction with wannier90 is through files:
 
@@ -35,24 +36,37 @@ All other interaction with wannier90 is through files:
 
 The standard command-line interaction with wannier90 has been bypassed.
 
-In MPI operation, no initialization is done by wannier90, and the communicator to be used is
-passed explicitly. Internally, the communicator is named ``mpi_comm_w90``. The ``mpif.h`` file
-is read once in the auxiliary module w90_mpi, which is used by relevant pieces of the code.
+In MPI operation, no initialization is done by wannier90, and the
+communicator to be used is passed explicitly. Internally, the
+communicator is named ``mpi_comm_w90``. The ``mpif.h`` file is read
+once in the auxiliary module w90_mpi, which is used by relevant pieces
+of the code.
 
-Some minor changes have been needed to make sure that all variables are deallocated at the end
-of the wannier90 run, so that the wrapper can be called repeatedly without errors.
+Some minor changes have been needed to make sure that all variables
+are deallocated at the end of the wannier90 run, so that the wrapper
+can be called repeatedly without errors.
 
 ### Compilation with CMake
 
-(Note that the standard makefile-based building system with **NOT** work for the wrapper.)
+(Note that the standard makefile-based building system with **NOT**
+work for the wrapper.)
 
-Basic incantation (items in brackets are optional, needed for MPI operation and to help finding
-an appropriate Lapack library):
+Basic incantation (items in brackets are optional, needed for MPI
+operation and to help finding an appropriate Lapack library):
 
 ```
   cmake -S. -B _build [ -DWITH_MPI=ON ] [-DLAPACK_LIBRARY=   ] [ -DCMAKE_INSTALL_PREFIX=/path/to/inst ]
   cmake --build _build
+  cmake --build _build --target test   
   [ cmake --install _build ]
+```
+
+On some systems the src/comms.F90 file might have to be compiled
+without optimization to avoid an obscure bug in MPI operation that
+leads to a segfault. In that case use
+
+```
+  cmake -S. -B _build -DWITH_MPI=ON -DWITH_NOT_OPT_COMMS=ON   [ + other options ]
 ```
 
   
