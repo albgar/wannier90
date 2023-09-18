@@ -60,14 +60,5 @@ operation and to help finding an appropriate Lapack library):
   cmake --build _build --target test   
   [ cmake --install _build ]
 ```
-
-On some systems the src/comms.F90 file might have to be compiled
-without optimization to avoid an obscure bug in MPI operation that
-leads to a segfault. In that case use
-
-```
-  cmake -S. -B _build -DWITH_MPI=ON -DWITH_NOT_OPT_COMMS=ON   [ + other options ]
-```
-
   
 

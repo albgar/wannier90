@@ -80,17 +80,20 @@ if(WITH_MPI)
   PRIVATE MPI
   )
 
-  if(WITH_NOT_OPT_COMMS)
    # This file might give problems in some systems (so far, MacOS M1 with gfortran...)
-   # so lower the optimization level
-   set(DEBUG_OPTIONS_LIST "${Fortran_FLAGS_DEBUG}")  # Should set this
+   # so lower the optimization level. Do it always, as the performance implications
+   # are negligible.
+   
+   set(DEBUG_OPTIONS_LIST "${Fortran_FLAGS_DEBUG}") 
+   if( "${DEBUG_OPTIONS_LIST}" STREQUAL "")
+     set(DEBUG_OPTIONS_LIST "-g -O0")    # reasonably universal?
+   endif()
    separate_arguments(DEBUG_OPTIONS_LIST)   # Turns empty space to ';'
-   message(STATUS "Debug flags for some files in Src: ${DEBUG_OPTIONS_LIST}")
+   message(STATUS " -- Debug flags for src/comms.F90 in Wannier90 wrapper: ${DEBUG_OPTIONS_LIST}")
    set_source_files_properties(
       src/comms.F90
       PROPERTIES
       COMPILE_OPTIONS "${DEBUG_OPTIONS_LIST}" )
-  endif()
  
   target_link_libraries("${PROJECT_NAME}-lib" PUBLIC MPI::MPI_Fortran)
 
