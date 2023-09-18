@@ -15,16 +15,14 @@ if("${srcdir}" STREQUAL "${bindir}")
 endif()
 
 project(
-  "libwannier90"
+  "wrapper-wannier90"
   LANGUAGES "Fortran"
   VERSION "3.1.0"
-  DESCRIPTION "Wannier90 Library/Wrapper for use in Siesta"
+  DESCRIPTION "Wannier90 wrapper library for use in Siesta"
 )
 
 # Follow GNU conventions for installing directories
 include(GNUInstallDirs)
-
-set(LIBRARY_OUTPUT_NAME "wannier90")
 
 # General configuration information
 add_subdirectory("config")
@@ -34,7 +32,7 @@ include(flags)
 find_package(CustomLapack)
 include(check_lapack)
 
-option(WITH_MPI "Whether libwannier90 should support MPI-parallelism" FALSE)
+option(WITH_MPI "Whether wrapper-wannier90 should support MPI-parallelism" FALSE)
 
 if(WITH_MPI)
   if (NOT TARGET MPI::MPI_Fortran)
@@ -108,12 +106,6 @@ target_include_directories(
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${module-dir}>
 )
-
-# Add alias libwannier90::libwannier90 to use the functionality
-# without the need to install
-#
-### add_library("${PROJECT_NAME}::${PROJECT_NAME}" ALIAS "${PROJECT_NAME}-lib")
-
 
 # Export targets for other projects
 add_library("${PROJECT_NAME}" INTERFACE)
