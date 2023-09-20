@@ -78,22 +78,35 @@ if(WITH_MPI)
   PRIVATE MPI
   )
 
-   # This file might give problems in some systems (so far, MacOS M1 with gfortran...)
-   # so lower the optimization level. Do it always, as the performance implications
-   # are negligible.
-
    if(False)
-   set(DEBUG_OPTIONS_LIST "${Fortran_FLAGS_DEBUG}") 
-   if( "${DEBUG_OPTIONS_LIST}" STREQUAL "")
-     set(DEBUG_OPTIONS_LIST "-g -O0")    # reasonably universal?
-   endif()
-   separate_arguments(DEBUG_OPTIONS_LIST)   # Turns empty space to ';'
-   message(STATUS " -- Debug flags for src/comms.F90 in Wannier90 wrapper: ${DEBUG_OPTIONS_LIST}")
-   set_source_files_properties(
+   
+      # This section is deactivated but kept in source in case similar problems happen in
+      # the future.
+      # The comms.F90 file might give problems in some systems (typically with modern gfortran),
+      # as the idiom used for calling MPI routines with multidimensional arrays forces
+      # the creation of a temporary array (at least when using optimization...).
+      # The offending lines have now been fixed for those MPI interfaces actually used by the w90 wrapper:
+      # gatherv_cmplx_3, gatherv_cmplx_4, and scatterv_cmplx_4.
+      # (Their use can be checked by doing 'nm' on the library.)
+      #
+      # If this is not done, lower the optimization level, as shown here in sketch.
+      # (compile options set by set_source_files_properties are added at the end of the list,
+      # and most compilers honor preferentially the flags closer to the end. But make sure.
+
+
+     set(DEBUG_OPTIONS_LIST "${Fortran_FLAGS_DEBUG}") 
+     if( "${DEBUG_OPTIONS_LIST}" STREQUAL "")
+       set(DEBUG_OPTIONS_LIST "-g -O0")    # reasonably universal?
+     endif()
+     separate_arguments(DEBUG_OPTIONS_LIST)   # Turns empty space to ';'
+     message(STATUS " -- Debug flags for src/comms.F90 in Wannier90 wrapper: ${DEBUG_OPTIONS_LIST}")
+     set_source_files_properties(
       src/comms.F90
       PROPERTIES
       COMPILE_OPTIONS "${DEBUG_OPTIONS_LIST}" )
-   endif()
+      
+  endif(False)
+  
   target_link_libraries("${PROJECT_NAME}-lib" PUBLIC MPI::MPI_Fortran)
 
 endif()

@@ -46,6 +46,11 @@ Some minor changes have been needed to make sure that all variables
 are deallocated at the end of the wannier90 run, so that the wrapper
 can be called repeatedly without errors.
 
+Also, some of the MPI wrappers involving multidimensional arrays
+in comms.F90 (corresponding to the comms_gatherv and comms_scatterv
+interfaces) have been changed to avoid the creation of temporary
+arrays and thus possible segfaults.
+
 ### Compilation with CMake
 
 (Note that the standard makefile-based building system with **NOT**

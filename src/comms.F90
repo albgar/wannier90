@@ -1029,7 +1029,7 @@ contains
 #ifdef MPI
     integer :: error
 
-    call MPI_gatherv(array, localcount, MPI_double_complex, rootglobalarray, counts, &
+    call MPI_gatherv(array(1,1,1), localcount, MPI_double_complex, rootglobalarray(1,1,1), counts, &
                      displs, MPI_double_complex, root_id, mpi_comm_w90, error)
 
     if (error .ne. MPI_success) then
