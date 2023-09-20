@@ -81,7 +81,8 @@ if(WITH_MPI)
    # This file might give problems in some systems (so far, MacOS M1 with gfortran...)
    # so lower the optimization level. Do it always, as the performance implications
    # are negligible.
-   
+
+   if(False)
    set(DEBUG_OPTIONS_LIST "${Fortran_FLAGS_DEBUG}") 
    if( "${DEBUG_OPTIONS_LIST}" STREQUAL "")
      set(DEBUG_OPTIONS_LIST "-g -O0")    # reasonably universal?
@@ -92,7 +93,7 @@ if(WITH_MPI)
       src/comms.F90
       PROPERTIES
       COMPILE_OPTIONS "${DEBUG_OPTIONS_LIST}" )
- 
+   endif()
   target_link_libraries("${PROJECT_NAME}-lib" PUBLIC MPI::MPI_Fortran)
 
 endif()
